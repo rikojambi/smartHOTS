@@ -115,6 +115,7 @@ export default function Dashboard() {
         })}</div> : <EmptyState title="Belum ada data siswa" />}
       </Card>
     </div>
+    {(user.role === 'admin' || user.role === 'teacher') && <Card className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-bold">Akses latihan siswa</h2><p className="text-sm text-slate-500">Tentukan mapel aktif yang boleh dikerjakan setiap siswa.</p></div><Link to="/akses-siswa"><Button variant="secondary">Atur mapel siswa</Button></Link></Card>}
     {user.role === 'admin' && <Card className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-bold">Pengelolaan aplikasi</h2><p className="text-sm text-slate-500">Kelola pengguna, struktur materi, dan cadangan data.</p></div><div className="flex gap-2"><Link to="/pengguna"><Button variant="secondary">Kelola pengguna</Button></Link><Link to="/pengaturan"><Button>Pengaturan & backup</Button></Link></div></Card>}
   </div>
 }

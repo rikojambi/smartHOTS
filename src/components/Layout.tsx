@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   BarChart3, BookOpen, ClipboardList, Database, FileDown, GraduationCap,
-  History, LayoutDashboard, LogOut, Menu, Settings, Upload, Users, X, WifiOff
+  History, LayoutDashboard, LogOut, Menu, Settings, Upload, UserCheck, Users, X, WifiOff
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '../lib/auth'
@@ -12,6 +12,7 @@ const NAV: Record<Role, { to: string; label: string; icon: typeof LayoutDashboar
   admin: [
     { to: '/dashboard', label: 'Ringkasan', icon: LayoutDashboard },
     { to: '/pengguna', label: 'Kelola Pengguna', icon: Users },
+    { to: '/akses-siswa', label: 'Akses Mapel Siswa', icon: UserCheck },
     { to: '/materi', label: 'Mata Pelajaran & Materi', icon: BookOpen },
     { to: '/bank-soal', label: 'Bank Soal', icon: Database },
     { to: '/analisis', label: 'Analisis', icon: BarChart3 },
@@ -24,6 +25,7 @@ const NAV: Record<Role, { to: string; label: string; icon: typeof LayoutDashboar
     { to: '/materi', label: 'Materi & TP', icon: BookOpen },
     { to: '/latihan', label: 'Latihan', icon: ClipboardList },
     { to: '/analisis', label: 'Analisis Siswa', icon: BarChart3 },
+    { to: '/akses-siswa', label: 'Akses Mapel Siswa', icon: UserCheck },
     { to: '/ekspor', label: 'Ekspor & Cetak', icon: FileDown }
   ],
   student: [

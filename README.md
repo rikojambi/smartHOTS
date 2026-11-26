@@ -11,6 +11,7 @@ Platform PWA berbahasa Indonesia untuk latihan dan analisis **Higher Order Think
 - Setiap mapel: **6 pilihan ganda + 4 multiple response**
 - Setiap soal memiliki: CP, TP, indikator, level kognitif C4/C5/C6, tingkat kesulitan, stimulus, opsi, kunci, pembahasan, alasan tiap pilihan salah, kompetensi, miskonsepsi, dan rekomendasi.
 - Role: **Admin**, **Guru**, **Siswa**
+- **Guru/admin dapat menentukan mapel aktif per siswa**; siswa hanya melihat latihan dari mapel yang diberikan.
 - Fitur: bank soal + CRUD, import DOCX, latihan adaptif, diagnosis kesalahan, remedial otomatis, analitik, ekspor/cetak, backup/pulihkan, dan PWA offline.
 
 ---
@@ -114,15 +115,19 @@ Tombol **Guru / Siswa / Admin** di halaman login akan mengisi kredensial dan lan
 5. **Import DOCX**
    - Unduh template, isi sesuai format, lalu import.
    - Periksa pratinjau, edit bila perlu, lalu konfirmasi simpan.
-6. **Analisis Siswa**
+6. **Akses Mapel Siswa**
+   - Pilih siswa, lalu centang mapel yang boleh dikerjakan.
+   - Guru hanya dapat mengatur mapel yang diampu; admin dapat mengatur semua mapel.
+   - Mapel yang tidak dicentang tidak muncul di halaman **Mulai Latihan** siswa.
+7. **Analisis Siswa**
    - Lihat penguasaan per materi, TP, indikator, pola kesalahan, dan buat rekomendasi remedial.
-7. **Ekspor & Cetak**
+8. **Ekspor & Cetak**
    - Ekspor Excel, CSV, JSON, Word dengan/tanpa kunci, template DOCX, atau cetak.
 
 ### 2. Untuk Siswa
 
 1. Masuk sebagai `siswa` / `siswa123`.
-2. Buka **Mulai Latihan**, pilih paket, lalu klik **Mulai latihan**.
+2. Buka **Mulai Latihan**. Hanya mapel yang diberikan guru/admin yang ditampilkan. Pilih paket, lalu klik **Mulai latihan**.
 3. Jawab pilihan ganda atau multiple response.
    - Jawaban tersimpan otomatis.
    - Timer berjalan dan submit otomatis saat waktu habis.
@@ -137,7 +142,8 @@ Tombol **Guru / Siswa / Admin** di halaman login akan mengisi kredensial dan lan
 
 1. Masuk sebagai `admin` / `admin123`.
 2. **Pengguna**: kelola akun admin/guru/siswa, status aktif/nonaktif, kelas, dan mata pelajaran guru.
-3. **Pengaturan**:
+3. **Akses Mapel Siswa**: tentukan mapel aktif untuk setiap siswa tanpa membatasi hanya pada mapel yang diampu guru.
+4. **Pengaturan**:
    - Ubah ambang kategori penguasaan.
    - Atur penilaian parsial dan penalti jawaban salah.
    - Konfigurasi endpoint sinkronisasi bila tersedia.

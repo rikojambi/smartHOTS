@@ -32,7 +32,16 @@ export default function AdminPage() {
     const lower = { ...u, username: u.username.toLowerCase() }
     await db.users.put(lower); await queueSync('users', lower.id)
     if (lower.role === 'student') {
-      await db.students.put({ id: lower.id, userId: lower.id, name: lower.name, className: className || 'X-A', school: school || '', createdAt: Date.now() })
+      const existingStudent = await db.students.where('userId').equals(lower.id).first()
+      await db.students.put({
+        id: existingStudent?.id || lower.id,
+        userId: lower.id,
+        name: lower.name,
+        className: className || 'X-A',
+        school: school || '',
+        subjectIds: existingStudent?.subjectIds || subjects.map(s => s.id),
+        createdAt: existingStudent?.createdAt || Date.now()
+      })
     } else if (lower.role === 'teacher') {
       await db.teachers.put({ id: lower.id, userId: lower.id, name: lower.name, subjects: subs || [], createdAt: Date.now() })
     }

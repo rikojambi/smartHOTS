@@ -21,6 +21,7 @@ export interface Student {
   name: string
   className: string
   school: string
+  subjectIds: string[]
   createdAt: number
 }
 

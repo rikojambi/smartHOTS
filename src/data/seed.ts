@@ -82,10 +82,21 @@ async function ensureSeedExercises() {
   if (additions.length) await db.exercises.bulkPut(additions)
 }
 
+async function ensureStudentSubjectAssignments() {
+  const subjects = await db.subjects.toArray()
+  if (!subjects.length) return
+  const subjectIds = subjects.map(s => s.id)
+  const students = await db.students.toArray()
+  const legacy = students.filter(s => !Array.isArray(s.subjectIds))
+  if (!legacy.length) return
+  await Promise.all(legacy.map(s => db.students.update(s.id, { subjectIds })))
+}
+
 export async function seedDatabase(force = false) {
   const existing = await db.subjects.count()
   if (existing > 0 && !force) {
     await ensureSeedExercises()
+    await ensureStudentSubjectAssignments()
     return
   }
 
@@ -105,9 +116,10 @@ export async function seedDatabase(force = false) {
     { id: 'class-10a', name: 'X-A', grade: 'X', semester: 1, teacherIds: ['teacher-1'] },
     { id: 'class-10b', name: 'X-B', grade: 'X', semester: 1, teacherIds: ['teacher-2'] }
   ]
+  const allSubjectIds = SUBJECT_SEEDS.map(s => s.id)
   const students: Student[] = [
-    { id: 'student-1', userId: 'student-1', name: 'Alya Putri', className: 'X-A', school: 'SMA Negeri 1', createdAt: now },
-    { id: 'student-2', userId: 'student-2', name: 'Rizky Pratama', className: 'X-B', school: 'SMA Negeri 1', createdAt: now }
+    { id: 'student-1', userId: 'student-1', name: 'Alya Putri', className: 'X-A', school: 'SMA Negeri 1', subjectIds: allSubjectIds, createdAt: now },
+    { id: 'student-2', userId: 'student-2', name: 'Rizky Pratama', className: 'X-B', school: 'SMA Negeri 1', subjectIds: allSubjectIds, createdAt: now }
   ]
   const topics: Topic[] = TOPIC_SEEDS.map(({ categories: _c, ...t }) => ({ ...t }))
   const objectives: LearningObjective[] = TOPIC_SEEDS.flatMap(t => t.tp.map((description, i) => ({

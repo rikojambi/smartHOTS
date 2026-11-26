@@ -8,9 +8,11 @@ import { Badge, Button, Card, EmptyState } from '../components/ui'
 export default function StudentExercises() {
   const { student } = useAuth()
   const navigate = useNavigate()
-  const exercises = useLiveQuery(() => db.exercises.filter(e => e.active).toArray(), []) || []
+  const allExercises = useLiveQuery(() => db.exercises.filter(e => e.active).toArray(), []) || []
   const questions = useLiveQuery(() => db.questions.toArray(), []) || []
   const subjects = useLiveQuery(() => db.subjects.toArray(), []) || []
+  const assignedSubjectIds = student?.subjectIds || subjects.map(s => s.id)
+  const exercises = allExercises.filter(e => assignedSubjectIds.includes(e.subjectId))
   const attempts = useLiveQuery(() => db.studentAttempts.where('studentId').equals(student?.id || '').toArray(), [student?.id]) || []
 
   async function start(exerciseId: string) {
@@ -37,7 +39,7 @@ export default function StudentExercises() {
 
   return <div className="space-y-5">
     <div><h1 className="text-2xl font-extrabold">Mulai Latihan</h1><p className="text-sm text-slate-500">Pilih paket latihan. Progres tersimpan otomatis dan dapat dilanjutkan kapan saja.</p></div>
-    {exercises.length === 0 ? <EmptyState title="Belum ada latihan aktif" description="Guru belum menerbitkan latihan. Cek kembali nanti." /> : <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{exercises.map(e => {
+    {exercises.length === 0 ? <EmptyState title="Belum ada latihan untuk akun Anda" description="Hubungi guru atau admin agar memberikan akses mata pelajaran dan menerbitkan paket latihan." /> : <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{exercises.map(e => {
       const available = e.questionIds.filter(id => questions.some(q => q.id === id && q.active && q.status === 'siap')).length
       const finished = attempts.filter(a => a.exerciseId === e.id && a.status === 'selesai').length
       const running = attempts.find(a => a.exerciseId === e.id && a.status === 'berjalan')
