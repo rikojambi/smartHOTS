@@ -27,9 +27,67 @@ export const SUBJECT_SEEDS: Subject[] = [
 
 export const ALL_SEED_QUESTIONS: SeedInput[] = [...MAT, ...BIN, ...BING, ...PAN, ...IPA, ...IPS, ...INF, ...PJO, ...SEN, ...PRA]
 
+const SEED_EXERCISE_IDS: Record<string, string> = { MAT: 'ex-matematika-1', BING: 'ex-bing-1' }
+const SEED_EXERCISE_TITLES: Record<string, string> = {
+  MAT: 'Latihan Dasar Barisan dan Fungsi',
+  BIN: 'Teks Informasi, Prosedur, dan Kalimat Efektif',
+  BING: 'Analytical Exposition & Recount',
+  PAN: 'Nilai Pancasila, Konstitusi, dan Bhineka Tunggal Ika',
+  IPA: 'Sel, Besaran, dan Materi',
+  IPS: 'Litosfer, Sumber Daya, dan Peradaban Awal',
+  INF: 'Algoritma, Data, dan Jaringan Komputer',
+  PJO: 'Kebugaran, Permainan Bola, dan Keselamatan',
+  SEN: 'Seni Musik, Rupa, Tari, dan Teater',
+  PRA: 'Kerajinan, Rekayasa, Budidaya, dan Pengolahan'
+}
+
+function seedExerciseId(subjectId: string) {
+  return SEED_EXERCISE_IDS[subjectId] || `ex-${subjectId.toLowerCase()}-1`
+}
+
+function seedExerciseTitle(subject: Subject) {
+  return SEED_EXERCISE_TITLES[subject.id] || `Latihan HOTS ${subject.name}`
+}
+
+function makeDefaultExercise(id: string, title: string, subjectId: string, ids: string[], teacherId: string, now: number): Exercise {
+  return {
+    id, title, subjectId, teacherId, active: true, createdAt: now,
+    questionIds: ids,
+    settings: {
+      questionCount: ids.length, durationMinutes: Math.max(10, ids.length * 2),
+      difficulties: ['mudah', 'sedang', 'sulit'], types: ['single', 'multiple'],
+      shuffleQuestions: true, shuffleOptions: false, allowRetry: 2,
+      showExplanation: 'selesai', partialScoring: true, wrongPenalty: 0, topicIds: []
+    }
+  }
+}
+
+async function ensureSeedExercises() {
+  const subjects = await db.subjects.toArray()
+  if (!subjects.length) return
+  const existingIds = new Set((await db.exercises.toArray()).map(e => e.id))
+  const questions = await db.questions.toArray()
+  const teachers = await db.teachers.toArray()
+  const now = Date.now()
+  const additions: Exercise[] = []
+
+  for (const seed of SUBJECT_SEEDS) {
+    const subject = subjects.find(s => s.id === seed.id)
+    if (!subject || existingIds.has(seedExerciseId(seed.id))) continue
+    const ids = questions.filter(q => q.subjectId === seed.id && q.active && q.status === 'siap').map(q => q.id)
+    const teacherId = teachers.find(t => t.subjects.includes(seed.id))?.userId || SEED_TEACHER
+    additions.push(makeDefaultExercise(seedExerciseId(seed.id), seedExerciseTitle(subject), seed.id, ids, teacherId, now))
+  }
+
+  if (additions.length) await db.exercises.bulkPut(additions)
+}
+
 export async function seedDatabase(force = false) {
   const existing = await db.subjects.count()
-  if (existing > 0 && !force) return
+  if (existing > 0 && !force) {
+    await ensureSeedExercises()
+    return
+  }
 
   const now = Date.now()
   const users: User[] = [
@@ -58,20 +116,11 @@ export async function seedDatabase(force = false) {
   })))
   const questions = ALL_SEED_QUESTIONS.map((q, i) => buildQuestion(q, i))
 
-  const defaultExercise = (id: string, title: string, subjectId: string, ids: string[], teacherId: string): Exercise => ({
-    id, title, subjectId, teacherId, active: true, createdAt: now,
-    questionIds: ids,
-    settings: {
-      questionCount: ids.length, durationMinutes: Math.max(10, ids.length * 2),
-      difficulties: ['mudah', 'sedang', 'sulit'], types: ['single', 'multiple'],
-      shuffleQuestions: true, shuffleOptions: false, allowRetry: 2,
-      showExplanation: 'selesai', partialScoring: true, wrongPenalty: 0, topicIds: []
-    }
+  const exercises: Exercise[] = SUBJECT_SEEDS.map(subject => {
+    const ids = questions.filter(q => q.subjectId === subject.id).map(q => q.id)
+    const teacherId = teachers.find(t => t.subjects.includes(subject.id))?.userId || SEED_TEACHER
+    return makeDefaultExercise(seedExerciseId(subject.id), seedExerciseTitle(subject), subject.id, ids, teacherId, now)
   })
-  const exercises: Exercise[] = [
-    defaultExercise('ex-matematika-1', 'Latihan Dasar Barisan dan Fungsi', 'MAT', questions.filter(q => q.subjectId === 'MAT').map(q => q.id), SEED_TEACHER),
-    defaultExercise('ex-bing-1', 'Analytical Exposition & Recount', 'BING', questions.filter(q => q.subjectId === 'BING').map(q => q.id), 'teacher-2')
-  ]
 
   await db.transaction('rw', db.tables.map(t => t.name), async () => {
       if (force) {

@@ -7,6 +7,7 @@ Platform PWA berbahasa Indonesia untuk latihan dan analisis **Higher Order Think
 ## Ringkasan
 
 - **10 mata pelajaran × 10 soal HOTS = 100 soal**
+- **10 paket latihan aktif**, satu untuk setiap mata pelajaran
 - Setiap mapel: **6 pilihan ganda + 4 multiple response**
 - Setiap soal memiliki: CP, TP, indikator, level kognitif C4/C5/C6, tingkat kesulitan, stimulus, opsi, kunci, pembahasan, alasan tiap pilihan salah, kompetensi, miskonsepsi, dan rekomendasi.
 - Role: **Admin**, **Guru**, **Siswa**
@@ -174,7 +175,7 @@ Urutan `SOAL n:` harus berada di awal blok. Format lama dengan `JENIS` sebelum `
 - Media/gambar soal disimpan sebagai blob di IndexedDB.
 - Antrean perubahan dibuat otomatis di tabel `syncQueue`.
 - Backup JSON dapat diunduh dan dipulihkan dari menu **Pengaturan**.
-- **Reset ke data awal** menghapus semua perubahan dan mengembalikan 100 soal serta akun demo.
+- **Reset ke data awal** menghapus semua perubahan dan mengembalikan 100 soal, 10 paket latihan aktif, serta akun demo.
 
 ### Batasan sinkronisasi
 
