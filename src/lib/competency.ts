@@ -1,4 +1,4 @@
-import type { Question, MasteryCategory } from '../types'
+import type { AiConfig, HeatmapColors, HeatmapSettings, MasteryCategory, Question, RemedialSettings } from '../types'
 import { getSetting } from '../db/db'
 
 export interface Thresholds { sangatBaik: number; baik: number; cukup: number; penguatan: number }
@@ -13,34 +13,34 @@ export function categorize(percentage: number, t: Thresholds): MasteryCategory {
   return 'Perlu remedial'
 }
 
-export const DEFAULT_HEATMAP_COLORS = {
+export const DEFAULT_HEATMAP_COLORS: HeatmapColors = {
   sangatBaik: '#10b981',
   baik: '#0ea5e9',
   cukup: '#f59e0b',
   penguatan: '#f97316',
   remedial: '#ef4444',
   insufficient: '#e2e8f0'
-} as const
+}
 
-export const DEFAULT_HEATMAP_SETTINGS = {
+export const DEFAULT_HEATMAP_SETTINGS: HeatmapSettings = {
   colors: DEFAULT_HEATMAP_COLORS,
   minEvidence: 3
-} as const
+}
 
-export const DEFAULT_REMEDIAL_SETTINGS = {
+export const DEFAULT_REMEDIAL_SETTINGS: RemedialSettings = {
   masteryThreshold: 70,
   level1Count: 4,
   level2Count: 4,
   level3Count: 4,
   enrichmentCount: 3,
   avoidRecentDays: 14
-} as const
+}
 
-export const DEFAULT_AI_CONFIG = {
+export const DEFAULT_AI_CONFIG: AiConfig = {
   enabled: false,
   endpoint: '',
   scopes: ['penjelasan', 'ringkasan', 'rekomendasi', 'draft-soal', 'kualitas-soal']
-} as const
+}
 
 export function normalizeIndicatorText(text: string) {
   return text.toLowerCase()

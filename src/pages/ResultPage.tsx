@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Link, useParams } from 'react-router-dom'
 import { CheckCircle2, Download, Printer, XCircle } from 'lucide-react'
 import { db } from '../db/db'
+import { useAuth } from '../lib/auth'
 import { Badge, Button, Card, EmptyState, ProgressBar } from '../components/ui'
 import { MediaView, RichText } from '../components/RichText'
 import { masteryColor } from '../lib/analytics'
@@ -10,6 +11,7 @@ import { analyticsLines, downloadPdfReport } from '../lib/export'
 
 export default function ResultPage() {
   const { attemptId } = useParams()
+  const { student: authStudent, user } = useAuth()
   const attempt = useLiveQuery(() => db.studentAttempts.get(attemptId || ''), [attemptId])
   const analytic = useLiveQuery(() => db.learningAnalytics.where('attemptId').equals(attemptId || '').first(), [attemptId])
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) || []
@@ -18,7 +20,8 @@ export default function ResultPage() {
   const [open, setOpen] = useState<string | null>(null)
 
   if (!attempt) return <Card>Memuat hasil…</Card>
-  if (attempt.status !== 'selesai') return <EmptyState title="Latihan belum selesai" description="Selesaikan latihan terlebih dahulu untuk melihat hasil." action={<Link to={`/practice/${attempt.id}`}><Button>Lanjutkan latihan</Button></Link>} />
+  if (user?.role === 'student' && attempt.studentId !== authStudent?.id) return <Card><p className="font-bold text-rose-600">Akses ditolak</p><p className="mt-1 text-sm text-slate-500">Hasil latihan ini bukan milik akun Anda.</p></Card>
+  if (attempt.status !== 'selesai') return <EmptyState title="Latihan belum selesai" description="Selesaikan latihan terlebih dahulu untuk melihat hasil." action={user?.role === 'student' && attempt.studentId === authStudent?.id ? <Link to={`/practice/${attempt.id}`}><Button>Lanjutkan latihan</Button></Link> : undefined} />
   const exercise = exercises.find(e => e.id === attempt.exerciseId)
   const student = students.find(s => s.id === attempt.studentId)
   const material = (analytic?.findings || []).filter(f => f.type === 'materi')

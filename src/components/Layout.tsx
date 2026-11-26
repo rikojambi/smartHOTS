@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
-  BarChart3, BookOpen, ClipboardList, Database, FileDown, GraduationCap,
-  History, LayoutDashboard, LogOut, Menu, RefreshCw, Settings, Upload, UserCheck, Users, X, WifiOff
+  BarChart3, BookOpen, ClipboardCheck, ClipboardList, Database, FileDown, GraduationCap,
+  History, LayoutDashboard, LayoutGrid, LogOut, Menu, RefreshCw, Settings, Sparkles,
+  Upload, UserCheck, Users, Wrench, X, WifiOff
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '../lib/auth'
@@ -17,6 +18,10 @@ const NAV: Record<Role, { to: string; label: string; icon: typeof LayoutDashboar
     { to: '/materi', label: 'Mata Pelajaran & Materi', icon: BookOpen },
     { to: '/bank-soal', label: 'Bank Soal', icon: Database },
     { to: '/analisis', label: 'Analisis', icon: BarChart3 },
+    { to: '/heatmap', label: 'Learning Heatmap', icon: LayoutGrid },
+    { to: '/remedial', label: 'Remedial Adaptif', icon: Wrench },
+    { to: '/asisten-ai', label: 'Asisten AI', icon: Sparkles },
+    { to: '/ekspor', label: 'Ekspor & Cetak', icon: FileDown },
     { to: '/pengaturan', label: 'Pengaturan & Backup', icon: Settings }
   ],
   teacher: [
@@ -26,6 +31,9 @@ const NAV: Record<Role, { to: string; label: string; icon: typeof LayoutDashboar
     { to: '/materi', label: 'Materi & TP', icon: BookOpen },
     { to: '/latihan', label: 'Latihan', icon: ClipboardList },
     { to: '/analisis', label: 'Analisis Siswa', icon: BarChart3 },
+    { to: '/heatmap', label: 'Learning Heatmap', icon: LayoutGrid },
+    { to: '/remedial', label: 'Remedial Adaptif', icon: Wrench },
+    { to: '/asisten-ai', label: 'Asisten AI', icon: Sparkles },
     { to: '/akses-siswa', label: 'Akses Mapel Siswa', icon: UserCheck },
     { to: '/sinkronisasi', label: 'Sinkronisasi Hasil', icon: RefreshCw },
     { to: '/ekspor', label: 'Ekspor & Cetak', icon: FileDown }
@@ -33,6 +41,7 @@ const NAV: Record<Role, { to: string; label: string; icon: typeof LayoutDashboar
   student: [
     { to: '/dashboard', label: 'Dashboard Siswa', icon: GraduationCap },
     { to: '/latihan-siswa', label: 'Mulai Latihan', icon: ClipboardList },
+    { to: '/remedial-saya', label: 'Remedial Saya', icon: ClipboardCheck },
     { to: '/riwayat', label: 'Riwayat Latihan', icon: History },
     { to: '/laporan', label: 'Laporan Belajar', icon: BarChart3 },
     { to: '/profil', label: 'Profil', icon: Users }

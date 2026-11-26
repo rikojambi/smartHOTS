@@ -20,6 +20,11 @@ import ResultPage from './pages/ResultPage'
 import HistoryPage from './pages/HistoryPage'
 import ReportPage from './pages/ReportPage'
 import ProfilePage from './pages/ProfilePage'
+import HeatmapPage from './pages/HeatmapPage'
+import RemedialPage from './pages/RemedialPage'
+import StudentRemedialPage from './pages/StudentRemedialPage'
+import RemedialReportPage from './pages/RemedialReportPage'
+import AiAssistantPage from './pages/AiAssistantPage'
 
 function Guard({ roles, children }: { roles?: Role[]; children: React.ReactNode }) {
   const { user, ready } = useAuth()
@@ -39,12 +44,17 @@ function AppRoutes() {
       <Route path="/materi" element={<Guard roles={['teacher', 'admin']}><TopicsPage /></Guard>} />
       <Route path="/latihan" element={<Guard roles={['teacher', 'admin']}><ExercisesPage /></Guard>} />
       <Route path="/analisis" element={<Guard roles={['teacher', 'admin']}><AnalyticsPage /></Guard>} />
+      <Route path="/heatmap" element={<Guard roles={['teacher', 'admin']}><HeatmapPage /></Guard>} />
+      <Route path="/remedial" element={<Guard roles={['teacher', 'admin']}><RemedialPage /></Guard>} />
+      <Route path="/laporan-remedial/:planId" element={<Guard roles={['teacher', 'admin']}><RemedialReportPage /></Guard>} />
+      <Route path="/asisten-ai" element={<Guard roles={['teacher', 'admin']}><AiAssistantPage /></Guard>} />
       <Route path="/ekspor" element={<Guard roles={['teacher', 'admin']}><ExportPage /></Guard>} />
       <Route path="/pengguna" element={<Guard roles={['admin']}><AdminPage /></Guard>} />
       <Route path="/akses-siswa" element={<Guard roles={['admin', 'teacher']}><StudentSubjectsPage /></Guard>} />
       <Route path="/sinkronisasi" element={<Guard roles={['admin', 'teacher']}><SyncPage /></Guard>} />
       <Route path="/pengaturan" element={<Guard roles={['admin', 'teacher']}><SettingsPage /></Guard>} />
       <Route path="/latihan-siswa" element={<Guard roles={['student']}><StudentExercises /></Guard>} />
+      <Route path="/remedial-saya" element={<Guard roles={['student']}><StudentRemedialPage /></Guard>} />
       <Route path="/practice/:attemptId" element={<Guard roles={['student']}><Practice /></Guard>} />
       <Route path="/hasil/:attemptId" element={<Guard roles={['student', 'teacher', 'admin']}><ResultPage /></Guard>} />
       <Route path="/riwayat" element={<Guard roles={['student']}><HistoryPage /></Guard>} />

@@ -3,7 +3,9 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock, Flag, Send } from 'lucide-react'
 import { db, queueSync } from '../db/db'
+import { useAuth } from '../lib/auth'
 import { analyzeAttempt, persistSkillEvidence } from '../lib/analytics'
+import { finalizeRemedialAttempt } from '../lib/remedial'
 import { gradeAnswer } from '../lib/grading'
 import { Badge, Button, Card, Confirm, ProgressBar } from '../components/ui'
 import { MediaView, RichText } from '../components/RichText'
@@ -20,7 +22,9 @@ const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${Str
 export default function Practice() {
   const { attemptId } = useParams()
   const navigate = useNavigate()
+  const { student } = useAuth()
   const attempt = useLiveQuery(() => db.studentAttempts.get(attemptId || ''), [attemptId])
+  const notOwned = !!student && !!attempt && attempt.studentId !== student.id
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) || []
   const questions = useLiveQuery(() => db.questions.toArray(), []) || []
   const [index, setIndex] = useState(0)
@@ -37,7 +41,7 @@ export default function Practice() {
   const answeredCount = attempt?.answers.filter(a => a.selected.length).length || 0
 
   const submit = useCallback(async () => {
-    if (!attempt || !exercise || submitted.current || attempt.status === 'selesai') return
+    if (!attempt || !exercise || submitted.current || attempt.status === 'selesai' || notOwned) return
     submitted.current = true; setSubmitting(true)
     const fresh = await db.studentAttempts.get(attempt.id)
     if (!fresh) return
@@ -53,6 +57,9 @@ export default function Practice() {
     const analytic = await analyzeAttempt(finished, exercise, questions, finished.id)
     await db.learningAnalytics.put(analytic)
     await persistSkillEvidence(finished, questions)
+    if (finished.kind === 'remedial' || finished.kind === 'pengayaan' || finished.remedialPlanId) {
+      await finalizeRemedialAttempt(finished)
+    }
     await queueSync('studentAttempts', finished.id)
     await queueSync('learningAnalytics', analytic.id)
     await queueSync('skillEvidence', finished.id)
@@ -60,7 +67,7 @@ export default function Practice() {
   }, [attempt, exercise, questions, navigate])
 
   useEffect(() => {
-    if (!attempt || attempt.status === 'selesai') return
+    if (!attempt || attempt.status === 'selesai' || notOwned) return
     const tick = () => {
       const left = Math.max(0, Math.ceil((attempt.startedAt + (exercise?.settings.durationMinutes || 20) * 60000 - Date.now()) / 1000))
       setSeconds(left)
@@ -72,7 +79,7 @@ export default function Practice() {
   }, [attempt?.id, attempt?.status, exercise?.settings.durationMinutes, submit])
 
   async function select(label: string) {
-    if (!attempt || !current || attempt.status === 'selesai') return
+    if (!attempt || !current || attempt.status === 'selesai' || notOwned) return
     const selected = current.type === 'single' ? [label]
       : answer?.selected.includes(label) ? answer.selected.filter(x => x !== label) : [...(answer?.selected || []), label]
     const g = gradeAnswer(current, selected, exercise?.settings || {})
@@ -86,7 +93,7 @@ export default function Practice() {
     })
   }
   async function toggleFlag() {
-    if (!attempt || !current) return
+    if (!attempt || !current || notOwned) return
     await db.studentAttempts.where('id').equals(attempt.id).modify(a => {
       a.answers = a.answers.map(ans => ans.questionId === current.id ? { ...ans, flagged: !ans.flagged } : ans)
     })
@@ -94,6 +101,7 @@ export default function Practice() {
   async function jump(i: number) { setIndex(i) }
 
   if (!attempt || !current) return <Card>Memuat latihan…</Card>
+  if (notOwned) return <Card><p className="font-bold text-rose-600">Akses ditolak</p><p className="mt-1 text-sm text-slate-500">Latihan ini bukan milik akun Anda.</p></Card>
   if (attempt.status === 'selesai') return <Navigate to={`/hasil/${attempt.id}`} replace />
 
   const optionOrder = exercise?.settings.shuffleOptions && attempt ? shuffledIndexes(attempt.id + current.id, current.options.length) : current.options.map((_, i) => i)

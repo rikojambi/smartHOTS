@@ -12,8 +12,11 @@ Platform PWA berbahasa Indonesia untuk latihan dan analisis **Higher Order Think
 - Setiap soal memiliki: CP, TP, indikator, level kognitif C4/C5/C6, tingkat kesulitan, stimulus, opsi, kunci, pembahasan, alasan tiap pilihan salah, kompetensi, miskonsepsi, dan rekomendasi.
 - Role: **Admin**, **Guru**, **Siswa**
 - **Guru/admin dapat menentukan mapel aktif per siswa**; siswa hanya melihat latihan dari mapel yang diberikan.
-- Fitur: bank soal + CRUD, import DOCX, latihan adaptif, diagnosis kesalahan, remedial otomatis, analitik, ekspor/cetak, backup/pulihkan, dan PWA offline.
-- **Hasil latihan siswa dapat dipindah ke aplikasi guru** lewat paket JSON ekspor–impor, tanpa server.
+- Fitur: bank soal + CRUD, **Word-to-Question** (DOCX 5 langkah), latihan adaptif, diagnosis kesalahan, **Learning Heatmap**, **Remedial Adaptif**, analitik, ekspor/cetak, backup/pulihkan, dan PWA offline.
+- **Learning Heatmap**: matriks siswa × indikator (juga bisa difilter per mapel, materi/TP, level kognitif, kelas, periode), detail per siswa, time-series indikator, ekspor CSV/JSON, dan cetak. Status "Perlu remedial" hanya muncul jika bukti mencukupi; sel dengan bukti kurang ditandai **belum cukup bukti**.
+- **Remedial Adaptif**: rekomendasi per indikator dengan 3 level + pengayaan, pemilihan soal dari bank yang sudah ada, peringatan jika bank/bukti tidak cukup, persetujuan dan penugasan oleh guru, attempt remedial, evaluasi otomatis, laporan, dan pembaruan heatmap setelah evaluasi.
+- **Asisten AI opsional**: hanya adapter proxy; API key tidak pernah disimpan di browser. AI tidak mengubah nilai/ketuntasan dan menghasilkan draft soal yang harus disetujui guru.
+- **Hasil latihan siswa dapat dipindah ke aplikasi guru** lewat paket JSON ekspor–impor (versi 2, kompatibel dengan versi 1), tanpa server.
 
 ---
 
@@ -113,20 +116,41 @@ Tombol **Guru / Siswa / Admin** di halaman login akan mengisi kredensial dan lan
    - Perubahan TP tidak menghapus riwayat latihan siswa.
 4. **Latihan**
    - Buat paket latihan: pilih soal, durasi, acak urutan/acak opsi, pembahasan, dan penilaian parsial.
-5. **Import DOCX**
-   - Unduh template, isi sesuai format, lalu import.
-   - Periksa pratinjau, edit bila perlu, lalu konfirmasi simpan.
-6. **Akses Mapel Siswa**
+5. **Import DOCX / Word-to-Question**
+   - Unduh **Template kosong** atau **Contoh terisi** di menu **Import DOCX**.
+   - Ikuti 5 langkah: unggah → analisis struktur → ekstraksi → preview/edit → simpan.
+   - Teks, tabel, gambar, dan persamaan OOXML dasar dipertahankan. Wizard mendeteksi duplikat, menyediakan **Lewati**/**Impor ulang**, dan memproses 10–500 soal per dokumen secara bertahap (25 soal per batch).
+   - Format `.doc` lama tidak diparse; konversi ke `.docx` terlebih dahulu.
+   - Soal hasil import masuk sebagai **Perlu diperiksa**; periksa status/kunci di Bank Soal sebelum dipakai latihan.
+6. **Learning Heatmap**
+   - Buka menu **Heatmap** untuk melihat penguasaan per indikator pada matriks siswa × indikator.
+   - Filter kelas, siswa, mapel, materi, TP, indikator, level kognitif, dan rentang tanggal.
+   - Klik sel/nama siswa untuk detail, bukti respons, dan grafik perkembangan indikator.
+   - Gunakan **Ekspor CSV**, **Ekspor JSON**, atau cetak. Dari detail siswa, tombol **Tugaskan remedial** membuka halaman remedial dengan siswa dan indikator sudah terpilih.
+7. **Remedial Adaptif**
+   - Buka menu **Remedial**, lalu **Buat rekomendasi**. Guru/admin juga bisa datang dari heatmap dengan konteks siswa + indikator.
+   - Sistem mengelompokkan bukti per indikator, memilih level 1/2/3 atau pengayaan, serta mengambil soal dari bank yang aktif. Sistem **tidak membuat soal/kunci otomatis**.
+   - Jika bukti < 3 butir, < 2 soal berbeda, atau bank soal tidak cukup, akan muncul peringatan dan rencana dilewati.
+   - Rencana berstatus **Disarankan** sampai guru memilih **Setujui / tugaskan**. Guru dapat mengubah level, materi, dan soal; menghentikan rencana; atau membuat pengayaan.
+   - Siswa mengerjakan lewat **Remedial Saya**. Setelah dinilai, evaluasi dibuat otomatis, status berubah menjadi **Tuntas** bila mencapai ambang, dan bukti baru memperbarui heatmap.
+   - **Laporan** pada tiap rencana dapat dicetak atau diunduh sebagai JSON.
+8. **Akses Mapel Siswa**
    - Pilih siswa, lalu centang mapel yang boleh dikerjakan.
    - Guru hanya dapat mengatur mapel yang diampu; admin dapat mengatur semua mapel.
    - Mapel yang tidak dicentang tidak muncul di halaman **Mulai Latihan** siswa.
-7. **Sinkronisasi Hasil**
+9. **Sinkronisasi Hasil**
    - Buka menu **Sinkronisasi Hasil**, pilih file JSON hasil latihan dari siswa, lalu **Baca file**.
    - Periksa pratinjau siswa, jumlah hasil, dan daftar paket, lalu klik **Impor ke aplikasi guru**.
-   - Impor tidak menimpa data yang sudah ada, sehingga boleh diulang.
-8. **Analisis Siswa**
+   - Impor tidak menimpa data yang sudah ada, sehingga boleh diulang. Paket versi 1 lama juga diterima dan bukti kompetensinya dibangun ulang dari jawaban.
+10. **Analisis Siswa**
    - Lihat penguasaan per materi, TP, indikator, pola kesalahan, dan buat rekomendasi remedial.
-9. **Ekspor & Cetak**
+11. **Asisten AI (opsional)**
+   - Aktifkan di **Pengaturan** dan isi URL endpoint proxy milik sekolah. Tidak ada kolom API key di aplikasi.
+   - Di menu **Asisten AI**, pilih layanan (penjelasan/ringkasan/rekomendasi/draft soal/kualitas soal) dan siswa, lalu jalankan.
+   - Draft soal dari AI masuk sebagai **Draft** dan baru dapat dipakai setelah guru menyetujuinya di Bank Soal. Nilai dan ketuntasan siswa tidak pernah diubah AI.
+12. **Pengaturan lanjutan**
+   - Atur ambang penguasaan, warna heatmap, minimal bukti per indikator, jumlah soal remedial/pengayaan, hari hindari soal terpakai, dan izin layanan AI.
+13. **Ekspor & Cetak**
    - Ekspor Excel, CSV, JSON, Word dengan/tanpa kunci, template DOCX, atau cetak.
 
 ### 2. Untuk Siswa
@@ -141,8 +165,9 @@ Tombol **Guru / Siswa / Admin** di halaman login akan mengisi kredensial dan lan
    - Nilai dan pembahasan tiap soal.
    - Materi yang perlu penguatan.
    - Pola kesalahan dan rekomendasi remedial.
-5. Riwayat dan laporan belajar tersedia di menu **Riwayat Latihan** dan **Laporan Belajar**.
-6. Untuk mengirim hasil ke guru, buka **Mulai Latihan** lalu klik **Unduh hasil untuk guru**. Kirim file JSON yang diunduh ke guru/admin.
+5. Buka **Remedial Saya** untuk melihat tugas yang telah disetujui guru, membaca materi, dan mengerjakan remedial/pengayaan. Nilai akhir serta rekomendasi lanjutan ditampilkan setelah selesai.
+6. Riwayat dan laporan belajar tersedia di menu **Riwayat Latihan** dan **Laporan Belajar**.
+7. Untuk mengirim hasil ke guru, buka **Mulai Latihan** lalu klik **Unduh hasil untuk guru**. Kirim file JSON yang diunduh ke guru/admin. Paket ini juga membawa bukti kompetensi dan rencana remedial yang relevan.
 
 ### 3. Untuk Admin
 
@@ -151,7 +176,9 @@ Tombol **Guru / Siswa / Admin** di halaman login akan mengisi kredensial dan lan
 3. **Akses Mapel Siswa**: tentukan mapel aktif untuk setiap siswa tanpa membatasi hanya pada mapel yang diampu guru.
 4. **Sinkronisasi Hasil**: terima paket JSON hasil latihan dari perangkat siswa dan impor ke aplikasi guru.
 5. **Pengaturan**:
-   - Ubah ambang kategori penguasaan.
+   - Ubah ambang kategori penguasaan dan warna learning heatmap.
+   - Atur minimal bukti per indikator, ambang tuntas remedial, jumlah soal per level/pengayaan, dan lama hindari soal terpakai.
+   - Aktifkan/nonaktifkan asisten AI, isi endpoint proxy, dan tentukan layanan yang diizinkan. Tidak ada API key di sisi browser.
    - Atur penilaian parsial dan penalti jawaban salah.
    - Konfigurasi endpoint sinkronisasi bila tersedia.
    - Unduh backup JSON, pulihkan backup, atau reset ke data awal.
@@ -178,21 +205,47 @@ TP: TP2 Menyusun deret
 TINGKAT KOGNITIF: C5
 ```
 
-Urutan `SOAL n:` harus berada di awal blok. Format lama dengan `JENIS` sebelum `SOAL` juga masih dikenali.
+Urutan `SOAL n:` harus berada di awal blok. Format lama dengan `JENIS` sebelum `SOAL` juga masih dikenali. Wizard juga memahami `STIMULUS`, `PERTANYAAN`, `TINGKAT KESULITAN`, `LEVEL`, `INDIKATOR`, `TP`, `MISKONSEPSI`, `REKOMENDASI`, dan `SEMANTIK`. Tabel dan gambar dipindai dari OOXML; persamaan OMML dasar (pecahan, akar, pangkat, simbol) dikonversi ke notasi teks. Konversi ini bukan pengganti LaTeX/MathML penuh. Setelah memuat ulang halaman, opsi **Impor ulang** memerlukan file DOCX asli dipilih kembali karena cache file hanya disimpan selama sesi.
+
+---
+
+## Learning Heatmap & bukti kompetensi
+
+- Penguasaan dihitung dari `skillEvidence` (bukti respons per soal), bukan dari nilai akhir latihan.
+- Identitas indikator yang stabil: `indicatorKey` dari `learningObjectiveId`, `indicatorKey` yang sudah ada, atau `topicId` + teks indikator yang dinormalisasi.
+- Status kategori: **Sangat baik / Baik / Cukup / Perlu penguatan / Perlu remedial**, dengan ambang dan warna yang dapat diatur di **Pengaturan**.
+- Sebuah sel dinyatakan cukup bukti jika memiliki minimal `minEvidence` butir, `minEvidence` soal berbeda, dan minimal 2 attempt. Jika tidak cukup, sel ditampilkan sebagai **belum cukup bukti** dan tidak diberi kesimpulan remedial.
+- Pola kesalahan dan miskonsepsi hanya ditampilkan jika berasal dari pola jawaban yang tercatat; aplikasi tidak menyimpulkan miskonsepsi tanpa bukti.
+- Filter tersedia untuk kelas (mengikuti `className` siswa), siswa, mapel, materi, TP, indikator, level kognitif, dan rentang tanggal.
+- Detail siswa menampilkan indikator dikuasai/perlu penguatan/belum cukup bukti, bukti respons, serta grafik perkembangan per indikator.
+- Ekspor CSV/JSON dan cetak tersedia. Tombol **Tugaskan remedial** mengirim konteks `student` dan `indicator` ke halaman **Remedial**.
+
+---
+
+## Remedial adaptif
+
+- Pemeriksaan dikelompokkan per indikator. Indikator dengan penguasaan di bawah `masteryThreshold` mendapat rencana; indikator dengan bukti kurang dari 3 butir atau kurang dari 2 soal berbeda dilewati dengan peringatan.
+- Level ditentukan dari besaran gap penguasaan dan pola kesalahan dominan: **Level 1** penguatan konsep, **Level 2** prosedur/penerapan, **Level 3** analisis/evaluasi. Pengayaan memakai soal sulit C5/C6.
+- Soal remedial hanya diambil dari bank yang aktif, tidak diarsipkan, sesuai indikator/mapel, dan belum terpakai dalam jendela `avoidRecentDays`. Jika jumlah soal tidak mencukupi, guru mendapat peringatan dan rencana tidak dibuat.
+- Sistem **tidak membuat soal atau kunci jawaban baru**. Rencana baru berstatus **Disarankan** sampai guru menyetujui/menugaskan; guru dapat mengubah level, materi, dan soal.
+- Attempt remedial memakai tabel `studentAttempts` yang sama dengan latihan biasa, dengan penanda `kind: 'remedial' | 'pengayaan'` dan `remedialPlanId`. Setelah selesai, `skillEvidence` bertambah dan evaluasi otomatis menentukan **Tuntas** atau tindak lanjut.
+- Rencana pengayaan hanya dibuat jika tersedia soal sulit C5/C6 untuk indikator tersebut; jika tidak, alasan tercatat pada evaluasi.
+- Laporan remedial dapat dicetak atau diunduh sebagai JSON.
 
 ---
 
 ## Data & penyimpanan
 
-- Seluruh data disimpan lokal di browser memakai **IndexedDB** melalui Dexie.
-- Media/gambar soal disimpan sebagai blob di IndexedDB.
+- Seluruh data disimpan lokal di browser memakai **IndexedDB** melalui Dexie (skema `version(2)`, peningkatan inkremental dari `version(1)`).
+- Media/gambar soal disimpan sebagai blob di IndexedDB (tabel `questionMedia`).
+- Bukti kompetensi dan rencana remedial disimpan di `skillEvidence` dan `remedialPlans`; keduanya ikut dalam backup dan paket hasil versi 2.
 - Antrean perubahan dibuat otomatis di tabel `syncQueue`.
 - Backup JSON dapat diunduh dan dipulihkan dari menu **Pengaturan**.
 - **Reset ke data awal** menghapus semua perubahan dan mengembalikan 100 soal, 10 paket latihan aktif, serta akun demo.
 
 ### Batasan sinkronisasi
 
-Untuk memindahkan hasil latihan antar-perangkat tanpa backend, pakai **Sinkronisasi Hasil**: siswa mengunduh paket JSON dari **Mulai Latihan**, lalu guru/admin mengimpornya di menu **Sinkronisasi Hasil**. Paket berisi hasil selesai, analitik, rekomendasi, serta soal/paket pendukung bila belum ada di perangkat guru.
+Untuk memindahkan hasil latihan antar-perangkat tanpa backend, pakai **Sinkronisasi Hasil**: siswa mengunduh paket JSON dari **Mulai Latihan**, lalu guru/admin mengimpornya di menu **Sinkronisasi Hasil**. Paket versi 2 berisi hasil selesai, analitik, rekomendasi, `skillEvidence`, `remedialPlans`, TP, media, riwayat import, serta soal/paket pendukung bila belum ada di perangkat guru. Paket versi 1 tetap diterima; bukti kompetensinya dibangun ulang dari jawaban yang dikirim.
 
 Aplikasi juga memiliki arsitektur antrean sinkronisasi dan pengaturan endpoint. Namun **backend cloud tidak disertakan**. Secara default `provider: none`. Jika ingin sinkron otomatis ke server, siapkan server/API sendiri lalu isi endpoint di **Pengaturan → Sinkronisasi**.
 
@@ -215,8 +268,8 @@ src/
   components/     Komponen UI, editor soal, layout, rich text
   data/           Seed 100 soal, CP/TP, dan kategori materi
   db/             Skema Dexie, backup/restore, sync queue
-  lib/            Auth, analytics, grading, DOCX, export, result sync
-  pages/          Halaman guru, admin, dan siswa
+  lib/            Auth, analytics, competency, heatmap, remedial, DOCX, AI adapter, export, result sync
+  pages/          Halaman guru, admin, siswa, heatmap, remedial, asisten AI, import DOCX
   App.tsx         Routing + guard peran
   types.ts        Definisi tipe domain
 public/           Ikon PWA, favicon, manifest pendukung
@@ -244,6 +297,10 @@ scripts/          Script pembuat ikon PNG
 | Data uji tercampur | Buka **Pengaturan → Reset ke data awal** |
 | Ingin memindahkan seluruh data ke perangkat lain | Unduh backup JSON, lalu pulihkan di perangkat tujuan |
 | Ingin memindahkan hanya hasil latihan siswa | Unduh paket JSON dari **Mulai Latihan**, lalu impor di menu **Sinkronisasi Hasil** guru/admin |
+| Sel heatmap bertanda "belum cukup bukti" | Kumpulkan minimal 3 bukti, 3 soal berbeda, dan 2 attempt untuk indikator tersebut; ubah minimal di **Pengaturan** bila diperlukan |
+| Tombol **Buat rekomendasi** tidak menghasilkan rencana | Periksa pesan peringatan: bisa karena bukti belum cukup, indikator sudah dikuasai, rencana aktif sudah ada, atau bank soal sesuai tidak tersedia |
+| Asisten AI belum bisa dipakai | Aktifkan layanan dan isi endpoint proxy di **Pengaturan**; aplikasi tetap berfungsi tanpa AI |
+| Opsi **Impor ulang** tidak muncul setelah reload | Pilih kembali file DOCX asli; cache file hanya berlaku selama sesi |
 | Ekspor tidak muncul | Izinkan popup/download di browser dan cek folder unduhan |
 
 ---

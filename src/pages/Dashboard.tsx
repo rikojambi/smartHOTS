@@ -1,8 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { BarChart3, BookOpen, ClipboardCheck, Database, TrendingUp, Users } from 'lucide-react'
+import { BarChart3, BookOpen, ClipboardCheck, Database, LayoutGrid, Sparkles, TrendingUp, Users, Wrench } from 'lucide-react'
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { db } from '../db/db'
+import { db, getSetting } from '../db/db'
 import { useAuth } from '../lib/auth'
 import { Badge, Button, Card, EmptyState, ProgressBar, StatCard } from '../components/ui'
 import { masteryColor } from '../lib/analytics'
@@ -17,6 +18,11 @@ export default function Dashboard() {
   const attempts = useLiveQuery(() => db.studentAttempts.toArray(), []) || []
   const analytics = useLiveQuery(() => db.learningAnalytics.toArray(), []) || []
   const recommendations = useLiveQuery(() => db.remediationRecommendations.toArray(), []) || []
+  const plans = useLiveQuery(() => db.remedialPlans.toArray(), []) || []
+  const [thresholds, setThresholds] = useState({ sangatBaik: 85, baik: 70, cukup: 55, penguatan: 40 })
+
+  useEffect(() => { getSetting('masteryThresholds', thresholds).then((t: typeof thresholds) => setThresholds({ ...thresholds, ...t })) }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   if (!user) return null
   const subjectName = (id: string) => subjects.find(s => s.id === id)?.name || id
@@ -37,11 +43,11 @@ export default function Dashboard() {
   }).filter(t => t.total > 0).sort((a, b) => (a.pct || 0) - (b.pct || 0))
 
   const distribution = [
-    { name: 'Sangat baik', value: finished.filter(a => a.score >= 85).length, color: '#059669' },
-    { name: 'Baik', value: finished.filter(a => a.score >= 70 && a.score < 85).length, color: '#0d9488' },
-    { name: 'Cukup', value: finished.filter(a => a.score >= 55 && a.score < 70).length, color: '#d97706' },
-    { name: 'Perlu penguatan', value: finished.filter(a => a.score >= 40 && a.score < 55).length, color: '#ea580c' },
-    { name: 'Perlu remedial', value: finished.filter(a => a.score < 40).length, color: '#e11d48' }
+    { name: 'Sangat baik', value: finished.filter(a => a.score >= thresholds.sangatBaik).length, color: '#059669' },
+    { name: 'Baik', value: finished.filter(a => a.score >= thresholds.baik && a.score < thresholds.sangatBaik).length, color: '#0d9488' },
+    { name: 'Cukup', value: finished.filter(a => a.score >= thresholds.cukup && a.score < thresholds.baik).length, color: '#d97706' },
+    { name: 'Perlu penguatan', value: finished.filter(a => a.score >= thresholds.penguatan && a.score < thresholds.cukup).length, color: '#ea580c' },
+    { name: 'Perlu remedial', value: finished.filter(a => a.score < thresholds.penguatan).length, color: '#e11d48' }
   ].filter(d => d.value > 0)
 
   const timeline = [...finished].sort((a, b) => (a.finishedAt || 0) - (b.finishedAt || 0)).slice(-8).map(a => ({
@@ -78,7 +84,7 @@ export default function Dashboard() {
         </Card>
       </div>
       <Card>
-        <div className="mb-3 flex items-center justify-between"><h2 className="font-bold">Rekomendasi belajar</h2><Link to="/laporan" className="text-sm font-semibold text-teal-700">Lihat laporan →</Link></div>
+        <div className="mb-3 flex items-center justify-between"><h2 className="font-bold">Rekomendasi belajar</h2><div className="flex gap-3"><Link to="/remedial-saya" className="text-sm font-semibold text-teal-700">Remedial saya →</Link><Link to="/laporan" className="text-sm font-semibold text-teal-700">Lihat laporan →</Link></div></div>
         {ownRecs.length ? <ul className="space-y-2 text-sm">{ownRecs.map(r => <li key={r.id} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">• {r.title}: {r.reason}</li>)}</ul> : <p className="text-sm text-slate-500">Selesaikan latihan untuk mendapat rekomendasi otomatis.</p>}
       </Card>
       <Card><h2 className="mb-3 font-bold">Riwayat terbaru</h2>
@@ -115,6 +121,9 @@ export default function Dashboard() {
         })}</div> : <EmptyState title="Belum ada data siswa" />}
       </Card>
     </div>
+    {(user.role === 'admin' || user.role === 'teacher') && <Card><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="flex items-center gap-2 font-bold"><LayoutGrid size={18} /> Pembelajaran adaptif</h2><p className="text-sm text-slate-500">Peta kelemahan kompetensi, rekomendasi remedial adaptif, dan asisten AI opsional.</p></div><div className="flex flex-wrap gap-2"><Link to="/heatmap"><Button variant="secondary"><LayoutGrid size={15} /> Heatmap</Button></Link><Link to="/remedial"><Button variant="secondary"><Wrench size={15} /> Remedial</Button></Link><Link to="/asisten-ai"><Button><Sparkles size={15} /> Asisten AI</Button></Link></div></div>
+      <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-600"><span><b>{plans.filter(p => p.status === 'ditugaskan' || p.status === 'berjalan' || p.status === 'pengayaan').length}</b> remedial aktif</span><span><b>{plans.filter(p => p.status === 'tuntas').length}</b> remedial tuntas</span><span><b>{plans.filter(p => p.status === 'pengayaan').length}</b> pengayaan</span></div>
+    </Card>}
     {(user.role === 'admin' || user.role === 'teacher') && <Card className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-bold">Akses latihan siswa</h2><p className="text-sm text-slate-500">Tentukan mapel aktif yang boleh dikerjakan setiap siswa.</p></div><div className="flex gap-2"><Link to="/akses-siswa"><Button variant="secondary">Atur mapel siswa</Button></Link><Link to="/sinkronisasi"><Button>Sinkronisasi hasil</Button></Link></div></Card>}
     {user.role === 'admin' && <Card className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-bold">Pengelolaan aplikasi</h2><p className="text-sm text-slate-500">Kelola pengguna, struktur materi, dan cadangan data.</p></div><div className="flex gap-2"><Link to="/pengguna"><Button variant="secondary">Kelola pengguna</Button></Link><Link to="/pengaturan"><Button>Pengaturan & backup</Button></Link></div></Card>}
   </div>

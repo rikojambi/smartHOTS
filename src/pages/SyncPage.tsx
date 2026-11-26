@@ -42,7 +42,7 @@ export default function SyncPage() {
 
     {error && <div className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</div>}
     {summary && <div className="rounded-xl bg-teal-50 p-3 text-sm text-teal-800">
-      Impor selesai: <b>{summary.attempts}</b> hasil latihan baru, <b>{summary.analytics}</b> analitik, <b>{summary.recommendations}</b> rekomendasi, <b>{summary.questions}</b> soal, dan <b>{summary.exercises}</b> paket latihan ditambahkan.
+      Impor selesai: <b>{summary.attempts}</b> hasil latihan baru, <b>{summary.analytics}</b> analitik, <b>{summary.recommendations}</b> rekomendasi, <b>{summary.questions}</b> soal, <b>{summary.exercises}</b> paket latihan, <b>{summary.skillEvidence}</b> bukti kompetensi, <b>{summary.remedialPlans}</b> rencana remedial, dan <b>{summary.media}</b> media soal ditambahkan.
       {summary.skippedAttempts > 0 && ` ${summary.skippedAttempts} hasil sudah ada dan dilewati.`}
     </div>}
 
@@ -57,7 +57,7 @@ export default function SyncPage() {
         {pkg && <div className="mt-5 space-y-4 border-t pt-4">
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-3">
             <div><b>{pkg.student.name}</b> <span className="text-slate-500">• {pkg.student.className} • {pkg.student.school}</span><div className="text-xs text-slate-500">Diekspor {new Date(pkg.exportedAt).toLocaleString('id-ID')}</div></div>
-            <div className="flex flex-wrap gap-2"><Badge className="bg-blue-100 text-blue-700">{pkg.attempts.length} hasil</Badge><Badge className="bg-violet-100 text-violet-700">{pkg.analytics.length} analitik</Badge><Badge className="bg-amber-100 text-amber-700">{pkg.recommendations.length} rekomendasi</Badge></div>
+            <div className="flex flex-wrap gap-2"><Badge className="bg-blue-100 text-blue-700">{pkg.attempts.length} hasil</Badge><Badge className="bg-violet-100 text-violet-700">{pkg.analytics.length} analitik</Badge><Badge className="bg-amber-100 text-amber-700">{pkg.recommendations.length} rekomendasi</Badge><Badge className="bg-emerald-100 text-emerald-700">{pkg.skillEvidence?.length || 0} bukti</Badge><Badge className="bg-rose-100 text-rose-700">{pkg.remedialPlans?.length || 0} remedial</Badge><Badge className="bg-slate-100 text-slate-700">v{pkg.version}</Badge></div>
           </div>
           {pkg.attempts.length ? <div className="overflow-x-auto"><table className="table"><thead><tr><th>Paket latihan</th><th>Nilai</th><th>Selesai</th><th>Status</th></tr></thead><tbody>{pkg.attempts.map(a => <tr key={a.id}><td>{exercises.find(e => e.id === a.exerciseId)?.title || pkg.exercises.find(e => e.id === a.exerciseId)?.title || a.exerciseId}</td><td><b>{a.score}</b></td><td>{a.finishedAt ? new Date(a.finishedAt).toLocaleString('id-ID') : '-'}</td><td><Badge className="bg-teal-100 text-teal-700">Selesai</Badge></td></tr>)}</tbody></table></div> : <EmptyState title="Tidak ada hasil selesai" description="Paket ini tidak memuat latihan yang sudah selesai." />}
           <div className="flex justify-end gap-2"><Button variant="secondary" onClick={() => { setPkg(null); setFile(null) }}>Batal</Button><Button disabled={busy} onClick={doImport}><RefreshCw size={16} /> {busy ? 'Mengimpor…' : 'Impor ke aplikasi guru'}</Button></div>
