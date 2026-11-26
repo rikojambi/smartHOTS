@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock, Flag, Send } from 'lucide-react'
 import { db, queueSync } from '../db/db'
-import { analyzeAttempt } from '../lib/analytics'
+import { analyzeAttempt, persistSkillEvidence } from '../lib/analytics'
 import { gradeAnswer } from '../lib/grading'
 import { Badge, Button, Card, Confirm, ProgressBar } from '../components/ui'
 import { MediaView, RichText } from '../components/RichText'
@@ -52,7 +52,10 @@ export default function Practice() {
     await db.studentAttempts.put(finished)
     const analytic = await analyzeAttempt(finished, exercise, questions, finished.id)
     await db.learningAnalytics.put(analytic)
+    await persistSkillEvidence(finished, questions)
     await queueSync('studentAttempts', finished.id)
+    await queueSync('learningAnalytics', analytic.id)
+    await queueSync('skillEvidence', finished.id)
     navigate(`/hasil/${finished.id}`)
   }, [attempt, exercise, questions, navigate])
 

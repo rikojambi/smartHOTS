@@ -92,11 +92,36 @@ async function ensureStudentSubjectAssignments() {
   await Promise.all(legacy.map(s => db.students.update(s.id, { subjectIds })))
 }
 
+function advancedDefaultSettings(now: number) {
+  return [
+    { key: 'heatmapColors', value: { sangatBaik: '#10b981', baik: '#0ea5e9', cukup: '#f59e0b', penguatan: '#f97316', remedial: '#ef4444', insufficient: '#e2e8f0' }, updatedAt: now },
+    { key: 'heatmapMinEvidence', value: 3, updatedAt: now },
+    { key: 'remedialSettings', value: { masteryThreshold: 70, level1Count: 4, level2Count: 4, level3Count: 4, enrichmentCount: 3, avoidRecentDays: 14 }, updatedAt: now },
+    { key: 'aiConfig', value: { enabled: false, endpoint: '', scopes: ['penjelasan', 'ringkasan', 'rekomendasi', 'draft-soal', 'kualitas-soal'] }, updatedAt: now }
+  ]
+}
+
+async function ensureAdvancedSetup() {
+  const now = Date.now()
+  const questions = await db.questions.toArray()
+  const missing = questions.filter(q => !q.indicatorKey)
+  if (missing.length) {
+    await db.questions.bulkPut(missing.map(q => ({
+      ...q,
+      indicatorKey: q.learningObjectiveId || `${q.topicId}|${q.indicator.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()}`
+    })))
+  }
+  for (const setting of advancedDefaultSettings(now)) {
+    if (!(await db.applicationSettings.get(setting.key))) await db.applicationSettings.put(setting)
+  }
+}
+
 export async function seedDatabase(force = false) {
   const existing = await db.subjects.count()
   if (existing > 0 && !force) {
     await ensureSeedExercises()
     await ensureStudentSubjectAssignments()
+    await ensureAdvancedSetup()
     return
   }
 
@@ -163,6 +188,7 @@ export async function seedDatabase(force = false) {
         value: { provider: 'none', endpoint: '' },
         updatedAt: now
       })
+      for (const setting of advancedDefaultSettings(now)) await db.applicationSettings.put(setting)
     })
 
   return { questions: questions.length }

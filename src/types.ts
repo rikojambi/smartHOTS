@@ -4,6 +4,9 @@ export type CognitiveLevel = 'C4' | 'C5' | 'C6'
 export type Difficulty = 'mudah' | 'sedang' | 'sulit'
 export type QuestionStatus = 'draft' | 'perlu_diperiksa' | 'siap' | 'diarsipkan'
 export type MasteryCategory = 'Sangat baik' | 'Baik' | 'Cukup' | 'Perlu penguatan' | 'Perlu remedial'
+export type AttemptKind = 'reguler' | 'remedial' | 'pengayaan'
+export type RemedialLevel = 1 | 2 | 3
+export type RemedialStatus = 'disarankan' | 'disetujui' | 'ditugaskan' | 'berjalan' | 'tuntas' | 'dihentikan' | 'pengayaan'
 
 export interface User {
   id: string
@@ -92,6 +95,11 @@ export interface Question {
   cp: string
   tp: string
   indicator: string
+  indicatorKey?: string
+  learningObjectiveId?: string
+  generatedBy?: 'teacher' | 'import' | 'ai'
+  approvedBy?: string
+  approvedAt?: number
   cognitive: CognitiveLevel
   difficulty: Difficulty
   type: QuestionType
@@ -179,6 +187,8 @@ export interface StudentAttempt {
   answers: StudentAnswer[]
   score: number
   snapshotVersion: Record<string, number>
+  kind?: AttemptKind
+  remedialPlanId?: string
 }
 
 export interface DiagnosticFinding {
@@ -230,6 +240,104 @@ export interface ImportHistory {
   imported: number
   errors: string[]
   createdAt: number
+  successCount?: number
+  failedCount?: number
+  imageCount?: number
+  warnings?: string[]
+  questionIds?: string[]
+  reimportOf?: string
+  analysis?: {
+    paragraphs: number
+    tables: number
+    images: number
+    equations: number
+  }
+}
+
+export interface SkillEvidence {
+  id: string
+  attemptId: string
+  studentId: string
+  questionId: string
+  subjectId: string
+  topicId: string
+  indicatorKey: string
+  indicator: string
+  subTopic: string
+  cognitive: CognitiveLevel
+  difficulty: Difficulty
+  correct: boolean
+  points: number
+  maxPoints: number
+  selected: string[]
+  correctIds: string[]
+  misconception: string
+  errorType: string
+  createdAt: number
+}
+
+export interface RemedialEvaluation {
+  at: number
+  attemptId: string
+  score: number
+  mastered: string[]
+  remaining: string[]
+  note: string
+}
+
+export interface RemedialPlan {
+  id: string
+  studentId: string
+  subjectId: string
+  topicId: string
+  indicatorKey: string
+  indicator: string
+  level: RemedialLevel
+  status: RemedialStatus
+  title: string
+  reason: string
+  materials: string[]
+  questionIds: string[]
+  sourceAttemptIds: string[]
+  scoreBefore: number
+  scoreAfter?: number
+  createdAt: number
+  updatedAt: number
+  dueAt?: number
+  assignedBy: string
+  approvedBy?: string
+  approvedAt?: number
+  history: RemedialEvaluation[]
+  teacherNote?: string
+}
+
+export interface HeatmapColors {
+  sangatBaik: string
+  baik: string
+  cukup: string
+  penguatan: string
+  remedial: string
+  insufficient: string
+}
+
+export interface HeatmapSettings {
+  colors: HeatmapColors
+  minEvidence: number
+}
+
+export interface RemedialSettings {
+  masteryThreshold: number
+  level1Count: number
+  level2Count: number
+  level3Count: number
+  enrichmentCount: number
+  avoidRecentDays: number
+}
+
+export interface AiConfig {
+  enabled: boolean
+  endpoint: string
+  scopes: string[]
 }
 
 export interface ApplicationSetting {
@@ -248,6 +356,13 @@ export interface ParsedQuestion {
   answer: string[]
   explanation: string
   tp: string
+  indicator?: string
+  competency?: string
+  misconception?: string
+  recommendation?: string
+  semantic?: 'konsep' | 'penerapan' | 'analisis'
+  tableHtml?: string
+  equationCount?: number
   cognitive: CognitiveLevel
   difficulty: Difficulty
   images: { id: string; name: string; blob: Blob; location: 'stimulus' | 'option'; optionLabel?: string }[]

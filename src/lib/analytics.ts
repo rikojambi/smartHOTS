@@ -1,19 +1,11 @@
-import type { DiagnosticFinding, LearningAnalytic, MasteryCategory, Question, StudentAttempt, Exercise } from '../types'
-import { getSetting } from '../db/db'
+import type { DiagnosticFinding, LearningAnalytic, MasteryCategory, Question, SkillEvidence, StudentAttempt, Exercise } from '../types'
+import { db, getSetting } from '../db/db'
+import { categorize, DEFAULT_THRESHOLDS, indicatorKeyOf, type Thresholds } from './competency'
 
-interface Thresholds { sangatBaik: number; baik: number; cukup: number; penguatan: number }
+export { categorize, DEFAULT_THRESHOLDS, indicatorKeyOf } from './competency'
+export type { Thresholds } from './competency'
 
-const DEFAULT_THRESHOLDS: Thresholds = { sangatBaik: 85, baik: 70, cukup: 55, penguatan: 40 }
-
-export function categorize(percentage: number, t: Thresholds): MasteryCategory {
-  if (percentage >= t.sangatBaik) return 'Sangat baik'
-  if (percentage >= t.baik) return 'Baik'
-  if (percentage >= t.cukup) return 'Cukup'
-  if (percentage >= t.penguatan) return 'Perlu penguatan'
-  return 'Perlu remedial'
-}
-
-function classifyError(q: Question, selected: string[]): string {
+export function classifyError(q: Question, selected: string[]): string {
   const text = `${q.indicator} ${q.misconception} ${q.subTopic}`.toLowerCase()
   if (!selected.length) return 'Kesalahan interpretasi soal (tidak ada jawaban)'
   if (/grafik|tabel|data|membaca|baca/.test(text)) return 'Kesalahan membaca data'
@@ -28,7 +20,7 @@ function aggregate(attempt: StudentAttempt, questions: Question[], type: 'materi
   attempt.answers.forEach(a => {
     const q = questions.find(x => x.id === a.questionId)
     if (!q) return
-    const key = type === 'materi' ? `${q.topicId}|${q.subTopic}` : type === 'tp' ? q.tp : q.indicator
+    const key = type === 'materi' ? `${q.topicId}|${q.subTopic}` : type === 'tp' ? q.tp : indicatorKeyOf(q)
     const row = map.get(key) || { correct: 0, total: 0 }
     row.total += 1
     if (a.correct) row.correct += 1
@@ -38,9 +30,46 @@ function aggregate(attempt: StudentAttempt, questions: Question[], type: 'materi
     const percentage = Math.round((v.correct / v.total) * 100)
     const label = type === 'materi'
       ? key.split('|')[1]
-      : key.length > 72 ? `${key.slice(0, 69)}…` : key
+      : type === 'indikator'
+        ? (questions.find(q => indicatorKeyOf(q) === key)?.indicator || key)
+        : key.length > 72 ? `${key.slice(0, 69)}…` : key
     return { key, label, type, correct: v.correct, total: v.total, percentage, category: categorize(percentage, t) }
   }).sort((a, b) => a.percentage - b.percentage)
+}
+
+export function buildSkillEvidence(attempt: StudentAttempt, questions: Question[]): SkillEvidence[] {
+  const createdAt = attempt.finishedAt || Date.now()
+  return attempt.answers.flatMap(a => {
+    const q = questions.find(x => x.id === a.questionId)
+    if (!q) return []
+    return [{
+      id: `se-${attempt.id}-${q.id}`,
+      attemptId: attempt.id,
+      studentId: attempt.studentId,
+      questionId: q.id,
+      subjectId: q.subjectId,
+      topicId: q.topicId,
+      indicatorKey: indicatorKeyOf(q),
+      indicator: q.indicator,
+      subTopic: q.subTopic,
+      cognitive: q.cognitive,
+      difficulty: q.difficulty,
+      correct: a.correct,
+      points: a.points,
+      maxPoints: a.maxPoints || 1,
+      selected: a.selected,
+      correctIds: a.correctIds,
+      misconception: q.misconception,
+      errorType: a.correct ? '' : classifyError(q, a.selected),
+      createdAt
+    }]
+  })
+}
+
+export async function persistSkillEvidence(attempt: StudentAttempt, questions: Question[]) {
+  const rows = buildSkillEvidence(attempt, questions)
+  if (rows.length) await db.skillEvidence.bulkPut(rows)
+  return rows
 }
 
 export async function analyzeAttempt(attempt: StudentAttempt, exercise: Exercise, questions: Question[], attemptId: string): Promise<LearningAnalytic> {

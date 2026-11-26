@@ -2,7 +2,7 @@ import Dexie, { type Table } from 'dexie'
 import type {
   ApplicationSetting, ClassRoom, Exercise, ImportHistory, LearningAnalytic,
   LearningObjective, Question, QuestionMedia, QuestionRevision,
-  RemediationRecommendation, Student, StudentAttempt, Subject, SyncTask,
+  RemedialPlan, RemediationRecommendation, SkillEvidence, Student, StudentAttempt, Subject, SyncTask,
   Teacher, Topic, User
 } from '../types'
 
@@ -24,6 +24,8 @@ export class SmartHotsDB extends Dexie {
   studentAnswers!: Table<{ id: string; attemptId: string; questionId: string; selected: string[]; correct: boolean; points: number }, string>
   learningAnalytics!: Table<LearningAnalytic, string>
   remediationRecommendations!: Table<RemediationRecommendation, string>
+  skillEvidence!: Table<SkillEvidence, string>
+  remedialPlans!: Table<RemedialPlan, string>
   importHistory!: Table<ImportHistory, string>
   applicationSettings!: Table<ApplicationSetting, string>
   syncQueue!: Table<SyncTask, number>
@@ -52,6 +54,48 @@ export class SmartHotsDB extends Dexie {
       applicationSettings: 'key',
       syncQueue: '++id,table,recordId,createdAt'
     })
+
+    this.version(2).stores({
+      users: 'id,username,role,active',
+      students: 'id,userId,className',
+      teachers: 'id,userId',
+      classes: 'id,name,grade',
+      subjects: 'id,name,order',
+      topics: 'id,subjectId,semester,order',
+      learningObjectives: 'id,subjectId,topicId',
+      questions: 'id,code,subjectId,topicId,category,type,difficulty,cognitive,status,active,teacherId,updatedAt,indicatorKey,learningObjectiveId',
+      questionOptions: 'id,questionId',
+      questionMedia: 'id,questionId',
+      questionRevisions: 'id,questionId,version',
+      exercises: 'id,subjectId,teacherId,active',
+      exerciseQuestions: 'id,exerciseId,questionId',
+      studentAttempts: 'id,exerciseId,studentId,status,finishedAt,[studentId+status]',
+      studentAnswers: 'id,attemptId,questionId',
+      learningAnalytics: 'id,attemptId,studentId,subjectId,createdAt,[studentId+createdAt]',
+      remediationRecommendations: 'id,studentId,subjectId,priority',
+      skillEvidence: 'id,attemptId,studentId,questionId,subjectId,topicId,indicatorKey,cognitive,createdAt,[studentId+indicatorKey],[studentId+createdAt]',
+      remedialPlans: 'id,studentId,subjectId,topicId,indicatorKey,level,status,assignedBy,createdAt,dueAt,[studentId+status]',
+      importHistory: 'id,fileName,subjectId,createdAt',
+      applicationSettings: 'key',
+      syncQueue: '++id,table,recordId,createdAt'
+    }).upgrade(async tx => {
+      const now = Date.now()
+      const normalize = (text: string) => text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
+      const questions = await tx.table('questions').toArray()
+      await tx.table('questions').bulkPut(questions.map(q => q.indicatorKey ? q : {
+        ...q,
+        indicatorKey: q.learningObjectiveId || `${q.topicId}|${normalize(q.indicator || '')}`
+      }))
+      const defaults = [
+        { key: 'heatmapColors', value: { sangatBaik: '#10b981', baik: '#0ea5e9', cukup: '#f59e0b', penguatan: '#f97316', remedial: '#ef4444', insufficient: '#e2e8f0' }, updatedAt: now },
+        { key: 'heatmapMinEvidence', value: 3, updatedAt: now },
+        { key: 'remedialSettings', value: { masteryThreshold: 70, level1Count: 4, level2Count: 4, level3Count: 4, enrichmentCount: 3, avoidRecentDays: 14 }, updatedAt: now },
+        { key: 'aiConfig', value: { enabled: false, endpoint: '', scopes: ['penjelasan', 'ringkasan', 'rekomendasi', 'draft-soal', 'kualitas-soal'] }, updatedAt: now }
+      ]
+      for (const setting of defaults) {
+        if (!(await tx.table('applicationSettings').get(setting.key))) await tx.table('applicationSettings').put(setting)
+      }
+    })
   }
 }
 
@@ -77,9 +121,9 @@ export async function exportBackup(): Promise<string> {
     'users', 'students', 'teachers', 'classes', 'subjects', 'topics', 'learningObjectives',
     'questions', 'questionOptions', 'questionMedia', 'questionRevisions', 'exercises',
     'exerciseQuestions', 'studentAttempts', 'studentAnswers', 'learningAnalytics',
-    'remediationRecommendations', 'importHistory', 'applicationSettings'
+    'remediationRecommendations', 'skillEvidence', 'remedialPlans', 'importHistory', 'applicationSettings'
   ] as const
-  const payload: Record<string, unknown> = { version: 1, exportedAt: Date.now() }
+  const payload: Record<string, unknown> = { version: 2, exportedAt: Date.now() }
   for (const name of tables) {
     const rows = await db.table(name).toArray()
     payload[name] = await Promise.all(rows.map(async row => {

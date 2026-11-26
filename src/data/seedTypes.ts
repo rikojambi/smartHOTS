@@ -1,4 +1,5 @@
 import type { CognitiveLevel, Difficulty, Question, QuestionType } from '../types'
+import { indicatorKeyOf } from '../lib/competency'
 
 export const SEED_TEACHER = 'teacher-1'
 
@@ -85,6 +86,8 @@ export function buildQuestion(s: SeedInput, index: number): Question {
     cp: topic.cp,
     tp: topic.tp.join('; '),
     indicator: s.indicator,
+    indicatorKey: indicatorKeyOf({ topicId: s.topicId, indicator: s.indicator }),
+    generatedBy: 'teacher',
     cognitive: s.cognitive,
     difficulty: s.difficulty,
     type: s.type,
