@@ -13,6 +13,7 @@ Platform PWA berbahasa Indonesia untuk latihan dan analisis **Higher Order Think
 - Role: **Admin**, **Guru**, **Siswa**
 - **Guru/admin dapat menentukan mapel aktif per siswa**; siswa hanya melihat latihan dari mapel yang diberikan.
 - Fitur: bank soal + CRUD, import DOCX, latihan adaptif, diagnosis kesalahan, remedial otomatis, analitik, ekspor/cetak, backup/pulihkan, dan PWA offline.
+- **Hasil latihan siswa dapat dipindah ke aplikasi guru** lewat paket JSON ekspor–impor, tanpa server.
 
 ---
 
@@ -119,9 +120,13 @@ Tombol **Guru / Siswa / Admin** di halaman login akan mengisi kredensial dan lan
    - Pilih siswa, lalu centang mapel yang boleh dikerjakan.
    - Guru hanya dapat mengatur mapel yang diampu; admin dapat mengatur semua mapel.
    - Mapel yang tidak dicentang tidak muncul di halaman **Mulai Latihan** siswa.
-7. **Analisis Siswa**
+7. **Sinkronisasi Hasil**
+   - Buka menu **Sinkronisasi Hasil**, pilih file JSON hasil latihan dari siswa, lalu **Baca file**.
+   - Periksa pratinjau siswa, jumlah hasil, dan daftar paket, lalu klik **Impor ke aplikasi guru**.
+   - Impor tidak menimpa data yang sudah ada, sehingga boleh diulang.
+8. **Analisis Siswa**
    - Lihat penguasaan per materi, TP, indikator, pola kesalahan, dan buat rekomendasi remedial.
-8. **Ekspor & Cetak**
+9. **Ekspor & Cetak**
    - Ekspor Excel, CSV, JSON, Word dengan/tanpa kunci, template DOCX, atau cetak.
 
 ### 2. Untuk Siswa
@@ -137,13 +142,15 @@ Tombol **Guru / Siswa / Admin** di halaman login akan mengisi kredensial dan lan
    - Materi yang perlu penguatan.
    - Pola kesalahan dan rekomendasi remedial.
 5. Riwayat dan laporan belajar tersedia di menu **Riwayat Latihan** dan **Laporan Belajar**.
+6. Untuk mengirim hasil ke guru, buka **Mulai Latihan** lalu klik **Unduh hasil untuk guru**. Kirim file JSON yang diunduh ke guru/admin.
 
 ### 3. Untuk Admin
 
 1. Masuk sebagai `admin` / `admin123`.
 2. **Pengguna**: kelola akun admin/guru/siswa, status aktif/nonaktif, kelas, dan mata pelajaran guru.
 3. **Akses Mapel Siswa**: tentukan mapel aktif untuk setiap siswa tanpa membatasi hanya pada mapel yang diampu guru.
-4. **Pengaturan**:
+4. **Sinkronisasi Hasil**: terima paket JSON hasil latihan dari perangkat siswa dan impor ke aplikasi guru.
+5. **Pengaturan**:
    - Ubah ambang kategori penguasaan.
    - Atur penilaian parsial dan penalti jawaban salah.
    - Konfigurasi endpoint sinkronisasi bila tersedia.
@@ -185,7 +192,9 @@ Urutan `SOAL n:` harus berada di awal blok. Format lama dengan `JENIS` sebelum `
 
 ### Batasan sinkronisasi
 
-Aplikasi sudah memiliki arsitektur antrean sinkronisasi dan pengaturan endpoint. Namun **backend cloud tidak disertakan**. Secara default `provider: none`. Jika ingin sinkron antar perangkat, siapkan server/API sendiri lalu isi endpoint di **Pengaturan → Sinkronisasi**.
+Untuk memindahkan hasil latihan antar-perangkat tanpa backend, pakai **Sinkronisasi Hasil**: siswa mengunduh paket JSON dari **Mulai Latihan**, lalu guru/admin mengimpornya di menu **Sinkronisasi Hasil**. Paket berisi hasil selesai, analitik, rekomendasi, serta soal/paket pendukung bila belum ada di perangkat guru.
+
+Aplikasi juga memiliki arsitektur antrean sinkronisasi dan pengaturan endpoint. Namun **backend cloud tidak disertakan**. Secara default `provider: none`. Jika ingin sinkron otomatis ke server, siapkan server/API sendiri lalu isi endpoint di **Pengaturan → Sinkronisasi**.
 
 ---
 
@@ -206,7 +215,7 @@ src/
   components/     Komponen UI, editor soal, layout, rich text
   data/           Seed 100 soal, CP/TP, dan kategori materi
   db/             Skema Dexie, backup/restore, sync queue
-  lib/            Auth, analytics, grading, DOCX, export
+  lib/            Auth, analytics, grading, DOCX, export, result sync
   pages/          Halaman guru, admin, dan siswa
   App.tsx         Routing + guard peran
   types.ts        Definisi tipe domain
@@ -233,7 +242,8 @@ scripts/          Script pembuat ikon PNG
 | Halaman terlihat kosong saat pertama dibuka | Tunggu sekitar 1 detik saat `useLiveQuery` memuat IndexedDB |
 | Tidak bisa install PWA | Pastikan HTTPS atau `localhost`, dan build produksi sudah dipakai |
 | Data uji tercampur | Buka **Pengaturan → Reset ke data awal** |
-| Ingin memindahkan data ke perangkat lain | Unduh backup JSON, lalu pulihkan di perangkat tujuan |
+| Ingin memindahkan seluruh data ke perangkat lain | Unduh backup JSON, lalu pulihkan di perangkat tujuan |
+| Ingin memindahkan hanya hasil latihan siswa | Unduh paket JSON dari **Mulai Latihan**, lalu impor di menu **Sinkronisasi Hasil** guru/admin |
 | Ekspor tidak muncul | Izinkan popup/download di browser dan cek folder unduhan |
 
 ---

@@ -11,6 +11,7 @@ import ExercisesPage from './pages/ExercisesPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import AdminPage from './pages/AdminPage'
 import StudentSubjectsPage from './pages/StudentSubjectsPage'
+import SyncPage from './pages/SyncPage'
 import SettingsPage from './pages/SettingsPage'
 import ExportPage from './pages/ExportPage'
 import StudentExercises from './pages/StudentExercises'
@@ -41,6 +42,7 @@ function AppRoutes() {
       <Route path="/ekspor" element={<Guard roles={['teacher', 'admin']}><ExportPage /></Guard>} />
       <Route path="/pengguna" element={<Guard roles={['admin']}><AdminPage /></Guard>} />
       <Route path="/akses-siswa" element={<Guard roles={['admin', 'teacher']}><StudentSubjectsPage /></Guard>} />
+      <Route path="/sinkronisasi" element={<Guard roles={['admin', 'teacher']}><SyncPage /></Guard>} />
       <Route path="/pengaturan" element={<Guard roles={['admin', 'teacher']}><SettingsPage /></Guard>} />
       <Route path="/latihan-siswa" element={<Guard roles={['student']}><StudentExercises /></Guard>} />
       <Route path="/practice/:attemptId" element={<Guard roles={['student']}><Practice /></Guard>} />

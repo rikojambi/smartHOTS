@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
-import { Clock, Play, RotateCcw } from 'lucide-react'
+import { Clock, Download, Play, RotateCcw } from 'lucide-react'
 import { db, uid } from '../db/db'
 import { useAuth } from '../lib/auth'
+import { buildResultSyncPackage, downloadResultSyncPackage } from '../lib/sync'
 import { Badge, Button, Card, EmptyState } from '../components/ui'
 
 export default function StudentExercises() {
@@ -14,6 +16,18 @@ export default function StudentExercises() {
   const assignedSubjectIds = student?.subjectIds || subjects.map(s => s.id)
   const exercises = allExercises.filter(e => assignedSubjectIds.includes(e.subjectId))
   const attempts = useLiveQuery(() => db.studentAttempts.where('studentId').equals(student?.id || '').toArray(), [student?.id]) || []
+  const [message, setMessage] = useState('')
+  const finishedCount = attempts.filter(a => a.status === 'selesai').length
+
+  async function exportResults() {
+    if (!student) return
+    try {
+      const pkg = await buildResultSyncPackage(student.id)
+      if (!pkg.attempts.length) { setMessage('Belum ada hasil latihan selesai untuk dikirim.'); return }
+      downloadResultSyncPackage(pkg)
+      setMessage(`${pkg.attempts.length} hasil latihan diunduh. Kirim file tersebut ke guru untuk diimpor.`)
+    } catch (e) { setMessage(`Gagal menyiapkan hasil: ${String(e)}`) }
+  }
 
   async function start(exerciseId: string) {
     if (!student) return
@@ -38,7 +52,11 @@ export default function StudentExercises() {
   }
 
   return <div className="space-y-5">
-    <div><h1 className="text-2xl font-extrabold">Mulai Latihan</h1><p className="text-sm text-slate-500">Pilih paket latihan. Progres tersimpan otomatis dan dapat dilanjutkan kapan saja.</p></div>
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div><h1 className="text-2xl font-extrabold">Mulai Latihan</h1><p className="text-sm text-slate-500">Pilih paket latihan. Progres tersimpan otomatis dan dapat dilanjutkan kapan saja.</p></div>
+      <Button variant="secondary" disabled={!finishedCount} onClick={exportResults}><Download size={16} /> Unduh hasil untuk guru</Button>
+    </div>
+    {message && <div className="rounded-xl bg-teal-50 p-3 text-sm text-teal-800">{message}</div>}
     {exercises.length === 0 ? <EmptyState title="Belum ada latihan untuk akun Anda" description="Hubungi guru atau admin agar memberikan akses mata pelajaran dan menerbitkan paket latihan." /> : <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{exercises.map(e => {
       const available = e.questionIds.filter(id => questions.some(q => q.id === id && q.active && q.status === 'siap')).length
       const finished = attempts.filter(a => a.exerciseId === e.id && a.status === 'selesai').length
